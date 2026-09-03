@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Sin turno{% endblock %}
+{% block page_title %}Nueva venta{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center;padding:40px;max-width:440px">
+  <p style="font-size:2rem;margin-bottom:12px">⚠️</p>
+  <h3 style="color:#1a237e;margin-bottom:8px">No tienes un turno abierto</h3>
+  <p style="color:#888;margin-bottom:20px;font-size:0.9rem">Debes abrir un turno antes de registrar ventas.</p>
+  <a href="{% url 'caja:abrir_turno' %}" class="btn btn-primary">Abrir turno ahora</a>
+</div>
+{% endblock %}

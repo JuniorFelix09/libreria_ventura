@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Cerrar turno{% endblock %}
+{% block page_title %}Cerrar turno{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px">
+  <div style="background:#f5f7ff;border-radius:10px;padding:16px;margin-bottom:22px">
+    <div style="font-size:0.8rem;color:#666;margin-bottom:10px">Resumen del sistema</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.9rem">
+      <span>Monto inicial</span><strong>RD${{ turno.monto_inicial }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.9rem">
+      <span>Ventas en efectivo</span><strong>RD${{ turno.total_ventas_efectivo }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.9rem">
+      <span>Ventas con tarjeta</span><strong>RD${{ turno.total_ventas_tarjeta }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #dde;font-size:1rem">
+      <span><strong>Esperado en caja</strong></span>
+      <strong style="color:#1565c0;font-size:1.1rem">RD${{ esperado }}</strong>
+    </div>
+  </div>
+
+  <p style="color:#666;font-size:0.87rem;margin-bottom:18px">
+    Cuenta el efectivo físico de la gaveta e ingrésalo abajo. El sistema calculará si hay sobrante o faltante.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>{{ field }}
+    </div>
+    {% endfor %}
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button type="submit" class="btn btn-danger">Confirmar cierre</button>
+      <a href="{% url 'caja:turno_actual' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

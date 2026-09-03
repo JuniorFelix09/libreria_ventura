@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px">
+  <form method="post" id="form-producto">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>
+      {% if field.name == 'categoria' %}
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1">{{ field }}</div>
+          <button type="button" class="btn btn-secondary" style="padding:9px 12px;white-space:nowrap" onclick="mostrarNuevaCategoria()">+ Nueva</button>
+        </div>
+        <div id="nueva-categoria-box" style="display:none;margin-top:8px;gap:8px">
+          <input type="text" id="nueva-categoria-nombre" placeholder="Nombre de la categoría"
+            style="flex:1;padding:9px 13px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none">
+          <button type="button" class="btn btn-success" style="padding:9px 14px" onclick="crearCategoria()">Agregar</button>
+        </div>
+        <div id="nueva-categoria-error" style="color:#e53935;font-size:0.78rem;margin-top:4px;display:none"></div>
+      {% else %}
+        {{ field }}
+      {% endif %}
+      {% if field.errors %}
+        <div style="color:#e53935;font-size:0.78rem;margin-top:3px">{{ field.errors|join:", " }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="{% url 'productos:lista' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function mostrarNuevaCategoria() {
+    const box = document.getElementById('nueva-categoria-box');
+    const abierto = box.style.display === 'flex';
+    box.style.display = abierto ? 'none' : 'flex';
+    if (!abierto) document.getElementById('nueva-categoria-nombre').focus();
+  }
+
+  function crearCategoria() {
+    const nombreInput = document.getElementById('nueva-categoria-nombre');
+    const nombre = nombreInput.value.trim();
+    const errorBox = document.getElementById('nueva-categoria-error');
+    errorBox.style.display = 'none';
+
+    if (!nombre) {
+      errorBox.textContent = 'Escribe un nombre para la categoría.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const csrfToken = document.querySelector('#form-producto [name=csrfmiddlewaretoken]').value;
+
+    fetch("{% url 'productos:crear_categoria' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+      body: new URLSearchParams({ nombre: nombre }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          errorBox.textContent = data.error;
+          errorBox.style.display = 'block';
+          return;
+        }
+        const select = document.querySelector('select[name="categoria"]');
+        let yaExiste = false;
+        for (const opt of select.options) {
+          if (parseInt(opt.value) === data.id) {
+            opt.selected = true;
+            yaExiste = true;
+          }
+        }
+        if (!yaExiste) {
+          const opt = document.createElement('option');
+          opt.value = data.id;
+          opt.textContent = data.nombre;
+          opt.selected = true;
+          select.appendChild(opt);
+        }
+        nombreInput.value = '';
+        document.getElementById('nueva-categoria-box').style.display = 'none';
+      })
+      .catch(() => {
+        errorBox.textContent = 'Ocurrió un error al crear la categoría.';
+        errorBox.style.display = 'block';
+      });
+  }
+</script>
+{% endblock %}

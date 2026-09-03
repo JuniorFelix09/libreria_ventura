@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Anular venta #{{ venta.pk }}{% endblock %}
+{% block page_title %}Anular venta #{{ venta.pk }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px">
+  <div class="alert alert-warning">Esta acción devuelve el stock de todos los productos y no se puede deshacer.</div>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Motivo de anulación</label>
+      <input type="text" name="motivo" placeholder="Describe el motivo" required>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button type="submit" class="btn btn-danger">Confirmar anulación</button>
+      <a href="{% url 'ventas:detalle' venta.pk %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

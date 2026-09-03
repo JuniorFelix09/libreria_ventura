@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Productos{% endblock %}
+{% block page_title %}Productos{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <span style="color:#888;font-size:0.87rem">{{ productos.count }} producto(s)</span>
+    <a href="{% url 'productos:crear' %}" class="btn btn-primary">+ Nuevo producto</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in productos %}
+      <tr>
+        <td>{{ p.nombre }} {% if p.es_servicio %}<span class="badge badge-info">Servicio</span>{% endif %}</td>
+        <td>{{ p.categoria|default:"—" }}</td>
+        <td>RD${{ p.precio }}{% if p.es_servicio %} <span style="color:#999;font-size:0.75rem">(sugerido)</span>{% endif %}</td>
+        <td>
+          {% if p.es_servicio %}<span style="color:#999">— N/A</span>
+          {% elif p.stock == 0 %}<span class="badge badge-danger">Sin stock</span>
+          {% elif p.stock <= 5 %}<span class="badge badge-warning">{{ p.stock }}</span>
+          {% else %}{{ p.stock }}{% endif %}
+        </td>
+        <td>
+          {% if p.activo %}<span class="badge badge-success">Activo</span>
+          {% else %}<span class="badge badge-danger">Inactivo</span>{% endif %}
+        </td>
+        <td style="display:flex;gap:6px">
+          <a href="{% url 'productos:editar' p.pk %}" class="btn btn-secondary" style="padding:5px 10px;font-size:0.78rem">Editar</a>
+          <a href="{% url 'productos:toggle_activo' p.pk %}" class="btn {% if p.activo %}btn-warning{% else %}btn-success{% endif %}" style="padding:5px 10px;font-size:0.78rem">
+            {% if p.activo %}Desactivar{% else %}Activar{% endif %}
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:#bbb;padding:30px">No hay productos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

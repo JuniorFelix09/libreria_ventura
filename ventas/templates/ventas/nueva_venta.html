@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Nueva venta{% endblock %}
+{% block page_title %}Nueva venta — {{ turno.caja }}{% endblock %}
+
+{% block extra_style %}
+.pos-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+.producto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.prod-card {
+  background: white; border: 2px solid #e8eaf0; border-radius: 12px;
+  padding: 14px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prod-card:hover { border-color: #1e88e5; box-shadow: 0 2px 10px rgba(30,136,229,0.15); }
+.prod-card .nombre { font-weight: 600; font-size: 0.88rem; color: #222; margin-bottom: 4px; }
+.prod-card .precio { color: #1565c0; font-weight: 700; font-size: 1rem; }
+.prod-card .stock  { font-size: 0.75rem; color: #999; margin-top: 4px; }
+.prod-card input[type=number] {
+  width: 100%; margin-top: 10px; padding: 6px 10px;
+  border: 1.5px solid #e0e0e0; border-radius: 6px;
+  font-size: 0.88rem; text-align: center; outline: none;
+  font-family: inherit; transition: border-color 0.2s;
+}
+.prod-card input[type=number]:focus { border-color: #1e88e5; }
+.badge-servicio { display:inline-block; background:#e3f2fd; color:#1565c0; font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:20px; margin-left:5px; vertical-align:middle; }
+.badge-dto { display:inline-block; background:#fff8e1; color:#e65100; font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:20px; margin-left:5px; vertical-align:middle; }
+.ticket-panel { position: sticky; top: 70px; }
+.ticket-panel .card { margin-bottom: 12px; }
+.metodo-btns { display: flex; gap: 6px; margin-bottom: 14px; }
+.metodo-btn {
+  flex: 1; padding: 10px 4px; border: 2px solid #e0e0e0; border-radius: 8px;
+  background: white; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+  color: #555; transition: all 0.2s; font-family: inherit;
+}
+.metodo-btn.active-efectivo { border-color: #43a047; background: #e8f5e9; color: #2e7d32; }
+.metodo-btn.active-tarjeta  { border-color: #1e88e5; background: #e3f2fd; color: #1565c0; }
+.metodo-btn.active-fiado    { border-color: #fb8c00; background: #fff8e1; color: #e65100; }
+#total-display { font-size: 1.5rem; font-weight: 700; color: #1a237e; text-align: center; margin: 6px 0; }
+#subtotal-display, #descuento-display { font-size: 0.8rem; color: #888; text-align: center; }
+select#cliente_select {
+  width: 100%; padding: 9px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 0.85rem; font-family: inherit; margin-bottom: 10px; outline: none; background: #f8f9ff;
+}
+{% endblock %}
+
+{% block content %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+<form method="post" id="form-venta">
+  {% csrf_token %}
+  <input type="hidden" name="metodo_pago" id="metodo_pago_input" value="">
+
+  <div class="pos-layout">
+
+    <div>
+      <input type="text" id="buscador" placeholder="🔍 Buscar producto o servicio..."
+        style="width:100%;padding:9px 14px;border:1.5px solid #e0e0e0;border-radius:8px;
+               font-size:0.9rem;margin-bottom:14px;outline:none;font-family:inherit">
+      <div class="producto-grid" id="grilla">
+        {% for p in productos %}
+        <div class="prod-card" data-nombre="{{ p.nombre|lower }}">
+          <div class="nombre">
+            {{ p.nombre }}
+            {% if p.es_servicio %}<span class="badge-servicio">Servicio</span>{% endif %}
+            {% if p.aplica_descuento_profesor %}<span class="badge-dto">Dto. profesor</span>{% endif %}
+          </div>
+
+          {% if p.es_servicio %}
+            <input type="number" step="0.01" min="0" placeholder="Precio RD$"
+              name="precio_{{ p.pk }}"
+              class="input-precio-servicio" data-pk="{{ p.pk }}"
+              oninput="calcularTotal()">
+          {% else %}
+            <div class="precio">RD${{ p.precio }}</div>
+            <div class="stock">Stock: {{ p.stock }}</div>
+          {% endif %}
+
+          <input type="number" name="cant_{{ p.pk }}" min="0" {% if not p.es_servicio %}max="{{ p.stock }}"{% endif %}
+            value="0" placeholder="Cantidad"
+            class="input-cantidad"
+            data-pk="{{ p.pk }}"
+            data-servicio="{% if p.es_servicio %}1{% else %}0{% endif %}"
+            data-descontable="{% if p.aplica_descuento_profesor %}1{% else %}0{% endif %}"
+            {% if not p.es_servicio %}data-precio="{{ p.precio }}"{% endif %}
+            onchange="calcularTotal()"
+            oninput="calcularTotal()">
+        </div>
+        {% empty %}
+        <p style="color:#bbb">No hay productos disponibles.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="ticket-panel">
+      <div class="card">
+        <label style="font-size:0.78rem;color:#666;font-weight:600">Cliente (opcional)</label>
+        <select id="cliente_select" name="cliente_id" onchange="clienteCambiado()">
+          <option value="">— Sin cliente —</option>
+          {% for c in clientes %}
+          <option value="{{ c.pk }}"
+            data-profesor="{% if c.es_profesor %}1{% else %}0{% endif %}"
+            data-descuento="{{ c.descuento_pct }}"
+            data-fiado="{% if c.permite_fiado %}1{% else %}0{% endif %}">
+            {{ c.nombre }}{% if c.es_profesor %} (Profesor · {{ c.descuento_pct }}% dto.){% endif %}{% if c.permite_fiado %} · Fía{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+
+        <div id="subtotal-display">Subtotal: RD$0.00</div>
+        <div id="descuento-display" style="display:none">Descuento: -RD$0.00</div>
+        <div id="total-display">RD$0.00</div>
+
+        <div style="font-size:0.8rem;color:#666;margin-bottom:8px;font-weight:600">Método de pago</div>
+        <div class="metodo-btns">
+          <button type="button" class="metodo-btn" id="btn-efectivo" onclick="seleccionarMetodo('EFECTIVO')">💵 Efectivo</button>
+          <button type="button" class="metodo-btn" id="btn-tarjeta"  onclick="seleccionarMetodo('TARJETA')">💳 Tarjeta</button>
+          <button type="button" class="metodo-btn" id="btn-fiado" onclick="seleccionarMetodo('FIADO')" disabled>📒 Fiado</button>
+        </div>
+
+        <button type="submit" class="btn btn-success" style="width:100%;padding:12px;font-size:0.95rem"
+          id="btn-cobrar" disabled>
+          Cobrar
+        </button>
+      </div>
+      <div class="card" style="font-size:0.82rem;color:#888">
+        <div>🗂 {{ turno.caja }}</div>
+        <div style="margin-top:4px">⏰ {{ turno.fecha_apertura|date:"H:i" }}</div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<script>
+  let metodoPago = '';
+
+  function clienteSeleccionado() {
+    const sel = document.getElementById('cliente_select');
+    const opt = sel.options[sel.selectedIndex];
+    return {
+      esProfesor: opt.dataset.profesor === '1',
+      descuentoPct: parseFloat(opt.dataset.descuento) || 0,
+      permiteFiado: opt.dataset.fiado === '1',
+    };
+  }
+
+  function clienteCambiado() {
+    const c = clienteSeleccionado();
+    document.getElementById('btn-fiado').disabled = !c.permiteFiado;
+    if (!c.permiteFiado && metodoPago === 'FIADO') {
+      metodoPago = '';
+      document.getElementById('metodo_pago_input').value = '';
+      document.getElementById('btn-fiado').className = 'metodo-btn';
+    }
+    calcularTotal();
+  }
+
+  function calcularTotal() {
+    const cantidadInputs = document.querySelectorAll('.input-cantidad');
+    let subtotal = 0;
+    let subtotalDescontable = 0;
+
+    cantidadInputs.forEach(inp => {
+      const cant = parseFloat(inp.value) || 0;
+      let precio = 0;
+      if (inp.dataset.servicio === '1') {
+        const precioInput = document.querySelector('.input-precio-servicio[data-pk="' + inp.dataset.pk + '"]');
+        precio = parseFloat(precioInput ? precioInput.value : 0) || 0;
+      } else {
+        precio = parseFloat(inp.dataset.precio) || 0;
+      }
+      const lineaSubtotal = cant * precio;
+      subtotal += lineaSubtotal;
+      if (inp.dataset.descontable === '1') {
+        subtotalDescontable += lineaSubtotal;
+      }
+    });
+
+    const c = clienteSeleccionado();
+    const descuentoPct = c.esProfesor ? c.descuentoPct : 0;
+    const descuentoMonto = subtotalDescontable * (descuentoPct / 100);
+    const total = subtotal - descuentoMonto;
+
+    document.getElementById('subtotal-display').textContent = 'Subtotal: RD$' + subtotal.toFixed(2);
+    const descDisplay = document.getElementById('descuento-display');
+    if (descuentoPct > 0 && subtotalDescontable > 0) {
+      descDisplay.style.display = 'block';
+      descDisplay.textContent = 'Descuento (' + descuentoPct + '% sobre RD$' + subtotalDescontable.toFixed(2) + '): -RD$' + descuentoMonto.toFixed(2);
+    } else {
+      descDisplay.style.display = 'none';
+    }
+    document.getElementById('total-display').textContent = 'RD$' + total.toFixed(2);
+    validarFormulario(total);
+  }
+
+  function seleccionarMetodo(m) {
+    metodoPago = m;
+    document.getElementById('metodo_pago_input').value = m;
+    document.getElementById('btn-efectivo').className = 'metodo-btn' + (m === 'EFECTIVO' ? ' active-efectivo' : '');
+    document.getElementById('btn-tarjeta').className  = 'metodo-btn' + (m === 'TARJETA'  ? ' active-tarjeta'  : '');
+    document.getElementById('btn-fiado').className    = 'metodo-btn' + (m === 'FIADO'    ? ' active-fiado'    : '');
+    const totalTxt = document.getElementById('total-display').textContent.replace('RD$','');
+    validarFormulario(parseFloat(totalTxt) || 0);
+  }
+
+  function validarFormulario(total) {
+    document.getElementById('btn-cobrar').disabled = !(total > 0 && metodoPago !== '');
+  }
+
+  document.getElementById('buscador').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.prod-card').forEach(card => {
+      card.style.display = card.dataset.nombre.includes(q) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

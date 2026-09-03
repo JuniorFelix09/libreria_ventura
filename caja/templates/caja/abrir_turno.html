@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Abrir turno{% endblock %}
+{% block page_title %}Abrir turno{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px">
+  <p style="color:#666;margin-bottom:20px;font-size:0.9rem">
+    Selecciona la caja física que vas a usar e ingresa el efectivo que hay en la gaveta al inicio del turno.
+  </p>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<div style="color:#e53935;font-size:0.78rem;margin-top:3px">{{ field.errors|join:", " }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="width:100%;padding:11px">Abrir turno</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Reportes{% endblock %}
+{% block page_title %}Reportes{% endblock %}
+{% block content %}
+
+<div class="card">
+  <h3 style="color:#1a237e;margin-bottom:4px">📊 Ventas por rango de fechas (Excel)</h3>
+  <p style="color:#888;font-size:0.85rem;margin-bottom:16px">Descarga el detalle de ventas del período seleccionado.</p>
+  <form action="{% url 'reportes:ventas_excel' %}" method="get" style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">
+    <div class="form-group" style="margin-bottom:0">
+      <label>Desde</label>
+      <input type="date" name="fecha_inicio" value="{{ fecha_inicio_default }}">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label>Hasta</label>
+      <input type="date" name="fecha_fin" value="{{ fecha_fin_default }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Descargar Excel</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3 style="color:#1a237e;margin-bottom:4px">📦 Inventario actual (Excel)</h3>
+  <p style="color:#888;font-size:0.85rem;margin-bottom:16px">Listado de productos con stock y valor total del inventario. Se resalta el stock bajo.</p>
+  <a href="{% url 'reportes:inventario_excel' %}" class="btn btn-success">Descargar Excel</a>
+</div>
+
+<div class="card">
+  <h3 style="color:#1a237e;margin-bottom:4px">🧾 Cierres de turno (PDF)</h3>
+  <p style="color:#888;font-size:0.85rem;margin-bottom:16px">Últimos turnos cerrados. Descarga el resumen individual en PDF.</p>
+  <table>
+    <thead>
+      <tr><th>Caja</th><th>Cajero</th><th>Cierre</th><th>Diferencia</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for t in turnos_cerrados %}
+      <tr>
+        <td>{{ t.caja }}</td>
+        <td>{{ t.cajero.get_full_name|default:t.cajero.username }}</td>
+        <td>{{ t.fecha_cierre|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if t.diferencia is not None %}
+            <span style="{% if t.diferencia >= 0 %}color:#2e7d32{% else %}color:#c62828{% endif %};font-weight:600">
+              {% if t.diferencia >= 0 %}+{% endif %}RD${{ t.diferencia }}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td><a href="{% url 'reportes:cierre_turno_pdf' t.pk %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.78rem">Descargar PDF</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;color:#bbb;padding:24px">Sin turnos cerrados todavía.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

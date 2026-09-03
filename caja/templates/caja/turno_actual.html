@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Mi turno{% endblock %}
+{% block page_title %}Mi turno{% endblock %}
+{% block content %}
+
+{% if not turno %}
+<div class="card" style="text-align:center;padding:40px">
+  <p style="font-size:2rem;margin-bottom:12px">🗂</p>
+  <h3 style="color:#1a237e;margin-bottom:8px">No tienes un turno abierto</h3>
+  <p style="color:#888;margin-bottom:20px">Abre un turno para comenzar a registrar ventas.</p>
+  <a href="{% url 'caja:abrir_turno' %}" class="btn btn-primary">Abrir turno</a>
+</div>
+
+{% else %}
+
+<!-- Info del turno -->
+<div class="card" style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:0">
+  <div>
+    <div style="font-size:0.75rem;color:#999;text-transform:uppercase;letter-spacing:.5px">Caja</div>
+    <div style="font-size:1.1rem;font-weight:600;color:#1a237e">{{ turno.caja }}</div>
+  </div>
+  <div>
+    <div style="font-size:0.75rem;color:#999;text-transform:uppercase;letter-spacing:.5px">Apertura</div>
+    <div style="font-weight:500">{{ turno.fecha_apertura|date:"d/m/Y H:i" }}</div>
+  </div>
+  <div>
+    <div style="font-size:0.75rem;color:#999;text-transform:uppercase;letter-spacing:.5px">Monto inicial</div>
+    <div style="font-weight:500">RD${{ turno.monto_inicial }}</div>
+  </div>
+  <div style="margin-left:auto">
+    <a href="{% url 'ventas:nueva' %}" class="btn btn-success">🛒 Nueva venta</a>
+    <a href="{% url 'caja:cerrar_turno' %}" class="btn btn-danger" style="margin-left:8px">Cerrar turno</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;margin-top:20px">
+
+  <!-- Ventas del turno -->
+  <div class="card">
+    <h4 style="margin-bottom:14px;color:#333">Ventas del turno</h4>
+    <table>
+      <thead><tr><th>#</th><th>Hora</th><th>Método</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for v in ventas %}
+        <tr>
+          <td><a href="{% url 'ventas:detalle' v.pk %}" style="color:#1e88e5">#{{ v.pk }}</a></td>
+          <td>{{ v.fecha|date:"H:i" }}</td>
+          <td>
+            {% if v.metodo_pago == 'EFECTIVO' %}<span class="badge badge-success">Efectivo</span>
+            {% else %}<span class="badge badge-info">Tarjeta</span>{% endif %}
+          </td>
+          <td><strong>RD${{ v.total }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">Sin ventas aún.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Panel lateral -->
+  <div>
+    <!-- Movimientos -->
+    <div class="card">
+      <h4 style="margin-bottom:14px;color:#333">Registrar movimiento</h4>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in movimiento_form %}
+        <div class="form-group">
+          <label>{{ field.label }}</label>{{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" name="registrar_movimiento" class="btn btn-warning" style="width:100%">Registrar</button>
+      </form>
+    </div>
+
+    {% if movimientos %}
+    <div class="card">
+      <h4 style="margin-bottom:12px;color:#333">Movimientos</h4>
+      {% for m in movimientos %}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f8;font-size:0.85rem">
+        <span>
+          {% if m.tipo == 'RETIRO' %}<span class="badge badge-danger">↑ Retiro</span>
+          {% else %}<span class="badge badge-success">↓ Ingreso</span>{% endif %}
+          {{ m.motivo }}
+        </span>
+        <span style="font-weight:600">RD${{ m.monto }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}

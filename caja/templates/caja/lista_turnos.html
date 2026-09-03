@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Todos los turnos{% endblock %}
+{% block page_title %}Todos los turnos{% endblock %}
+{% block content %}
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Caja</th><th>Cajero</th><th>Apertura</th><th>Cierre</th><th>Estado</th><th>Diferencia</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for t in turnos %}
+      <tr>
+        <td>{{ t.caja }}</td>
+        <td>{{ t.cajero.get_full_name|default:t.cajero.username }}</td>
+        <td>{{ t.fecha_apertura|date:"d/m/Y H:i" }}</td>
+        <td>{{ t.fecha_cierre|date:"d/m/Y H:i"|default:"—" }}</td>
+        <td>
+          {% if t.estado == 'ABIERTO' %}<span class="badge badge-success">Abierto</span>
+          {% else %}<span class="badge badge-info">Cerrado</span>{% endif %}
+        </td>
+        <td>
+          {% if t.diferencia is not None %}
+            <span style="{% if t.diferencia >= 0 %}color:#2e7d32{% else %}color:#c62828{% endif %};font-weight:600">
+              {% if t.diferencia >= 0 %}+{% endif %}RD${{ t.diferencia }}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="display:flex;gap:6px">
+          {% if t.estado == 'ABIERTO' %}
+          <a href="{% url 'caja:cerrar_turno_admin' t.pk %}" class="btn btn-danger" style="padding:4px 10px;font-size:0.78rem">Cerrar</a>
+          {% else %}
+          <a href="{% url 'caja:resumen_cierre' t.pk %}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.78rem">Ver</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:#bbb;padding:24px">Sin turnos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

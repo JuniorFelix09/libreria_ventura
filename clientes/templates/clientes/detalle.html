@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}{{ cliente.nombre }}{% endblock %}
+{% block page_title %}{{ cliente.nombre }}{% endblock %}
+{% block content %}
+
+<div class="card" style="display:flex;gap:40px;flex-wrap:wrap">
+  <div>
+    <div style="font-size:0.78rem;color:#999;text-transform:uppercase">Teléfono</div>
+    <div style="font-size:1rem;font-weight:600">{{ cliente.telefono|default:"—" }}</div>
+  </div>
+  <div>
+    <div style="font-size:0.78rem;color:#999;text-transform:uppercase">Profesor</div>
+    <div style="font-size:1rem;font-weight:600">
+      {% if cliente.es_profesor %}Sí — {{ cliente.descuento_pct }}% dto.{% else %}No{% endif %}
+    </div>
+  </div>
+  <div>
+    <div style="font-size:0.78rem;color:#999;text-transform:uppercase">Límite de fiado</div>
+    <div style="font-size:1rem;font-weight:600">
+      {% if cliente.limite_fiado > 0 %}RD${{ cliente.limite_fiado }}{% else %}Sin límite{% endif %}
+    </div>
+  </div>
+  <div>
+    <div style="font-size:0.78rem;color:#999;text-transform:uppercase">Saldo pendiente</div>
+    <div style="font-size:1.3rem;font-weight:700;color:{% if cliente.saldo_pendiente > 0 %}#c62828{% else %}#2e7d32{% endif %}">
+      RD${{ cliente.saldo_pendiente }}
+    </div>
+  </div>
+</div>
+
+{% if cliente.permite_fiado %}
+<div class="card" style="max-width:420px">
+  <h3 style="color:#1a237e;margin-bottom:14px">Registrar abono</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Monto</label>
+      {{ form.monto }}
+    </div>
+    <div class="form-group">
+      <label>Nota</label>
+      {{ form.nota }}
+    </div>
+    <button type="submit" class="btn btn-success">Registrar abono</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="color:#1a237e;margin-bottom:14px">Ventas fiadas</h3>
+  <table>
+    <thead><tr><th>Venta #</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for v in ventas_fiado %}
+      <tr>
+        <td><a href="{% url 'ventas:detalle' v.pk %}" style="color:#1565c0">#{{ v.pk }}</a></td>
+        <td>{{ v.fecha|date:"d/m/Y H:i" }}</td>
+        <td>RD${{ v.total }}</td>
+        <td>{% if v.anulada %}<span class="badge badge-danger">Anulada</span>{% else %}<span class="badge badge-success">Válida</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">Sin ventas fiadas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="color:#1a237e;margin-bottom:14px">Historial de abonos</h3>
+  <table>
+    <thead><tr><th>Fecha</th><th>Monto</th><th>Nota</th><th>Registrado por</th></tr></thead>
+    <tbody>
+      {% for a in abonos %}
+      <tr>
+        <td>{{ a.fecha|date:"d/m/Y H:i" }}</td>
+        <td style="color:#2e7d32;font-weight:600">RD${{ a.monto }}</td>
+        <td>{{ a.nota|default:"—" }}</td>
+        <td>{{ a.registrado_por.get_full_name|default:a.registrado_por.username }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">Sin abonos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

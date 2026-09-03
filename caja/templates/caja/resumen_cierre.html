@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Resumen de cierre{% endblock %}
+{% block page_title %}Resumen de cierre{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px">
+  <h3 style="color:#1a237e;margin-bottom:4px">{{ turno.caja }} — Turno cerrado</h3>
+  <p style="color:#888;font-size:0.85rem;margin-bottom:22px">
+    {{ turno.fecha_apertura|date:"d/m/Y H:i" }} → {{ turno.fecha_cierre|date:"d/m/Y H:i" }}
+  </p>
+
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#f5f7ff;border-radius:8px">
+      <span>Monto inicial</span><strong>RD${{ turno.monto_inicial }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#f5f7ff;border-radius:8px">
+      <span>Ventas efectivo</span><strong>RD${{ turno.total_ventas_efectivo }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#f5f7ff;border-radius:8px">
+      <span>Ventas tarjeta</span><strong>RD${{ turno.monto_esperado_tarjeta }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#e3f2fd;border-radius:8px">
+      <span><strong>Esperado en caja</strong></span><strong style="color:#1565c0">RD${{ turno.monto_esperado_efectivo }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#f5f7ff;border-radius:8px">
+      <span>Contado físico</span><strong>RD${{ turno.monto_contado }}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:12px 14px;border-radius:8px;
+      {% if turno.diferencia >= 0 %}background:#e8f5e9{% else %}background:#ffebee{% endif %}">
+      <span><strong>Diferencia</strong></span>
+      <strong style="{% if turno.diferencia >= 0 %}color:#2e7d32{% else %}color:#c62828{% endif %}">
+        {% if turno.diferencia >= 0 %}+{% endif %}RD${{ turno.diferencia }}
+        {% if turno.diferencia > 0 %} (sobrante){% elif turno.diferencia < 0 %} (faltante){% else %} (exacto){% endif %}
+      </strong>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <a href="{% url 'caja:abrir_turno' %}" class="btn btn-primary">Abrir nuevo turno</a>
+    <a href="{% url 'reportes:cierre_turno_pdf' turno.pk %}" class="btn btn-secondary">Descargar PDF</a>
+  </div>
+</div>
+{% endblock %}
