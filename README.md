@@ -84,10 +84,4 @@ libreria_ventura/
 └── static/                   # CSS/JS/imágenes propias del proyecto
 ```
 
-## Próximos pasos
 
-- Modelos de datos (`Caja`, `Turno`, `MovimientoCaja`, `Producto`, `Venta`,
-  `DetalleVenta`).
-- Login y roles (`Perfil` con admin/cajero + decorador de permisos).
-- Flujo de venta y descuento de stock.
-- Reportes en Excel (openpyxl) y PDF (reportlab).
